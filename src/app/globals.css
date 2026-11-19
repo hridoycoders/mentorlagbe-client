@@ -4,87 +4,139 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ================================
+   LIGHT THEME
+================================ */
+
 :root {
-  --background: #f8fafc;
-  --foreground: #172033;
+  color-scheme: light;
+
+  --background: #ffffff;
+  --foreground: #0f172a;
 
   --card: #ffffff;
-  --card-foreground: #172033;
+  --card-foreground: #0f172a;
 
   --popover: #ffffff;
-  --popover-foreground: #172033;
+  --popover-foreground: #0f172a;
 
-  --primary: #4f46e5;
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
 
-  --secondary: #eef2ff;
-  --secondary-foreground: #3730a3;
+  --secondary: #eff6ff;
+  --secondary-foreground: #1e40af;
 
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
 
-  --accent: #ccfbf1;
-  --accent-foreground: #0f766e;
+  --accent: #e0f2fe;
+  --accent-foreground: #075985;
 
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
 
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #6366f1;
+  --ring: #60a5fa;
 
-  --radius: 0.8rem;
+  --radius: 0.75rem;
 
-  --brand-primary: #4f46e5;
-  --brand-secondary: #6366f1;
-  --brand-accent: #0d9488;
-  --brand-cyan: #0d9488;
-  --brand-amber: #d97706;
+  /* Brand Colors */
+  --brand-primary: #2563eb;
+  --brand-secondary: #0ea5e9;
+  --brand-accent: #14b8a6;
+  --brand-cyan: #0ea5e9;
+  --brand-amber: #f59e0b;
 
-  --gradient-primary: linear-gradient(135deg, #4f46e5, #0d9488);
-  --gradient-hero: linear-gradient(135deg, #eef2ff 0%, #f0fdfa 100%);
-  --gradient-footer: linear-gradient(135deg, #eef2ff 0%, #f8fafc 55%, #ccfbf1 100%);
+  /* Gradients */
+  --gradient-primary: linear-gradient(
+    135deg,
+    #2563eb 0%,
+    #0ea5e9 100%
+  );
+
+  --gradient-hero: linear-gradient(
+    135deg,
+    #f0f9ff 0%,
+    #ffffff 55%,
+    #eff6ff 100%
+  );
+
+  --gradient-footer: linear-gradient(
+    135deg,
+    #eff6ff 0%,
+    #f8fafc 55%,
+    #e0f2fe 100%
+  );
 }
 
+/* ================================
+   DARK THEME
+================================ */
+
 .dark {
+  color-scheme: dark;
+
   --background: #0b1220;
   --foreground: #f1f5f9;
 
-  --card: #151f32;
+  --card: #131f32;
   --card-foreground: #f1f5f9;
 
-  --popover: #151f32;
+  --popover: #131f32;
   --popover-foreground: #f1f5f9;
 
-  --primary: #818cf8;
-  --primary-foreground: #111827;
+  --primary: #60a5fa;
+  --primary-foreground: #0b1220;
 
-  --secondary: #1e293b;
-  --secondary-foreground: #c7d2fe;
+  --secondary: #172b46;
+  --secondary-foreground: #bfdbfe;
 
   --muted: #1e293b;
   --muted-foreground: #94a3b8;
 
-  --accent: #134e4a;
-  --accent-foreground: #99f6e4;
+  --accent: #123047;
+  --accent-foreground: #bae6fd;
 
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  --border: #29364b;
-  --input: #29364b;
-  --ring: #818cf8;
+  --border: #26364c;
+  --input: #26364c;
+  --ring: #60a5fa;
 
-  --brand-primary: #818cf8;
-  --brand-secondary: #a5b4fc;
+  /* Brand Colors */
+  --brand-primary: #60a5fa;
+  --brand-secondary: #38bdf8;
   --brand-accent: #2dd4bf;
-  --brand-cyan: #2dd4bf;
+  --brand-cyan: #38bdf8;
   --brand-amber: #fbbf24;
 
-  --gradient-primary: linear-gradient(135deg, #818cf8, #2dd4bf);
-  --gradient-hero: linear-gradient(135deg, #111c32 0%, #102b32 100%);
-  --gradient-footer: linear-gradient(135deg, #111c32 0%, #0b1220 55%, #102b32 100%);
+  /* Gradients */
+  --gradient-primary: linear-gradient(
+    135deg,
+    #3b82f6 0%,
+    #0ea5e9 100%
+  );
+
+  --gradient-hero: linear-gradient(
+    135deg,
+    #101d32 0%,
+    #0b1728 55%,
+    #10263a 100%
+  );
+
+  --gradient-footer: linear-gradient(
+    135deg,
+    #101d32 0%,
+    #0b1220 55%,
+    #10263a 100%
+  );
 }
+
+/* ================================
+   TAILWIND THEME
+================================ */
 
 @theme inline {
   --color-background: var(--background);
@@ -130,6 +182,10 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ================================
+   GLOBAL STYLES
+================================ */
+
 * {
   border-color: var(--border);
 }
@@ -142,10 +198,10 @@ body {
   min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   transition:
-    background-color 0.25s ease,
-    color 0.25s ease;
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 button,
@@ -158,9 +214,18 @@ button {
 }
 
 ::selection {
-  background: var(--brand-primary);
-  color: white;
+  background: #bfdbfe;
+  color: #1e3a8a;
 }
+
+.dark ::selection {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+/* ================================
+   BRAND UTILITIES
+================================ */
 
 .brand-gradient {
   background: var(--gradient-primary);
@@ -190,7 +255,7 @@ button {
 }
 
 .brand-shadow {
-  box-shadow: 0 8px 25px rgb(79 70 229 / 18%);
+  box-shadow: 0 8px 25px rgb(37 99 235 / 14%);
 }
 
 .card-shadow {
@@ -198,8 +263,12 @@ button {
 }
 
 .dark .card-shadow {
-  box-shadow: 0 4px 20px rgb(0 0 0 / 15%);
+  box-shadow: 0 4px 20px rgb(0 0 0 / 20%);
 }
+
+/* ================================
+   CONTAINER
+================================ */
 
 .container {
   width: 100%;

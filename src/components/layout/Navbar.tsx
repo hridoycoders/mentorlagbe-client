@@ -21,8 +21,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const navLinks = [
   { label: "Home", href: "/" },
-  { label: "Find Tutors", href: "/tuitions" },
-  { label: "Pricing", href: "/pricing" },
+  { label: "Browse Tuitions", href: "/tuitions" },
+  { label: "How It Works", href: "/#how-it-works" },
+  { label: "Pricing / Pro Plans", href: "/pricing" },
 ];
 
 function ThemeToggle() {
@@ -193,9 +194,14 @@ export default function Navbar() {
                       {user.name?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="max-w-28 truncate text-sm font-semibold">
-                    {user.name}
-                  </span>
+                  <div className="flex flex-col items-start">
+                    <span className="max-w-28 truncate text-sm font-semibold">
+                      {user.name}
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-primary">
+                      {role}
+                    </span>
+                  </div>
                   <ChevronDown size={15} />
                 </button>
 

@@ -57,7 +57,10 @@ const tutorSteps = [
 
 export default function HowItWorks() {
   return (
-    <section className="border-y border-border bg-muted/30">
+    <section
+      id="how-it-works"
+      className="scroll-mt-24 border-y border-border bg-muted/30"
+    >
       <div className="container py-8 sm:py-11 lg:py-14">
         {/* Section Heading */}
         <div className="mx-auto mb-6 max-w-2xl text-center sm:mb-8 lg:mb-10">

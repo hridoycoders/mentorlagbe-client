@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getDashboardPath } from "@/lib/dashboard";
 import {
   GraduationCap,
   UserRound,
@@ -71,9 +72,9 @@ export default function SignUpPage() {
         return;
       }
 
-      router.push(role === "tutor" ? "/dashboard/tutor" : "/dashboard/student");
+     router.push(getDashboardPath(role));
+     router.refresh();
 
-      router.refresh();
     } catch (err) {
       console.error("Registration error:", err);
       setError("Something went wrong. Please try again.");

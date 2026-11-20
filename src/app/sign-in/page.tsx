@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getDashboardPath } from "@/lib/dashboard";
 import {
   GraduationCap,
   Eye,
@@ -51,7 +52,10 @@ export default function SignInPage() {
         return;
       }
 
-      router.push("/dashboard");
+      const userRole = (result.data?.user as { role?: string } | undefined)
+        ?.role;
+
+      router.push(getDashboardPath(userRole));
       router.refresh();
     } catch (err) {
       console.error("Login error:", err);
@@ -80,7 +84,10 @@ export default function SignInPage() {
             </h2>
             <Button
               className="w-full"
-              onClick={() => router.push("/dashboard")}
+              onClick={() => {
+                const userRole = (session.user as { role?: string }).role;
+                router.push(getDashboardPath(userRole));
+              }}
             >
               Go to Dashboard
               <ArrowRight />

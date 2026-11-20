@@ -3,6 +3,8 @@ import HeroSection from "@/components/home/HeroSection";
 import FeaturedTuitions from "@/components/home/FeaturedTuitions";
 import TuitionCategories from "@/components/home/TuitionCategories";
 import { ArrowRight, Users } from "lucide-react";
+import PricingSection from "@/components/home/PricingSection";
+import HowItWorks from "@/components/home/HowItWorks";
 
 const stats = [
   { value: "500+", label: "Expert Tutors" },
@@ -18,6 +20,9 @@ export default function Home() {
       <FeaturedTuitions />
 
       <TuitionCategories />
+      <HowItWorks />
+
+      <PricingSection />
 
       {/* Statistics */}
       <section className="container py-10">

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import "./globals.css";
@@ -34,8 +35,16 @@ export default function RootLayout({
       >
         <Providers>
           <div className="flex min-h-screen flex-col">
-            <Navbar />
+            <Suspense
+              fallback={
+                <div className="h-17 w-full animate-pulse border-b border-border bg-background" />
+              }
+            >
+              <Navbar />
+            </Suspense>
+
             <main className="flex-1">{children}</main>
+
             <Footer />
           </div>
         </Providers>

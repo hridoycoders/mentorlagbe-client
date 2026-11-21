@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -16,10 +16,13 @@ import {
   Image as ImageIcon,
   LockKeyhole,
   Send,
+  LoaderCircle,
+  AlertCircle,
+  Check,
 } from "lucide-react";
 
 import { apiRequest } from "@/lib/api";
-import { useSession } from "@/lib/auth-client";
+import { authClient, useSession } from "@/lib/auth-client";
 import type { Tuition } from "@/types/tuition";
 
 interface TuitionDetails extends Tuition {
@@ -31,6 +34,14 @@ interface TuitionDetailsResponse {
   success: boolean;
   message: string;
   data: TuitionDetails;
+}
+
+interface ApplicationResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    _id: string;
+  };
 }
 
 function formatFee(tuition: TuitionDetails) {
@@ -108,6 +119,8 @@ export default function TuitionDetailsPage() {
   const user = session?.user as
     | {
         role?: string;
+        name?: string;
+        email?: string;
       }
     | undefined;
 
@@ -116,6 +129,11 @@ export default function TuitionDetailsPage() {
   const [tuition, setTuition] = useState<TuitionDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [applicationMessage, setApplicationMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [applicationError, setApplicationError] = useState("");
+  const [applicationSuccess, setApplicationSuccess] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -156,6 +174,66 @@ export default function TuitionDetailsPage() {
       active = false;
     };
   }, [tuitionId]);
+
+  async function handleApplicationSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!isStudent) {
+      setApplicationError("Only student accounts can apply.");
+      return;
+    }
+
+    if (!applicationMessage.trim()) {
+      setApplicationError("Please write a short message to the tutor.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setApplicationError("");
+
+      // Get JWT from Better Auth
+      const { data: tokenData, error: tokenError } = await authClient.token();
+
+      if (tokenError || !tokenData?.token) {
+        throw new Error(
+          "Could not verify your login session. Please sign in again.",
+        );
+      }
+
+      // Submit application to backend
+      const response = await apiRequest<ApplicationResponse>(
+        "/api/applications",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${tokenData.token}`,
+          },
+          body: JSON.stringify({
+            tuitionId,
+            message: applicationMessage.trim(),
+          }),
+        },
+      );
+
+      if (response.success) {
+        setApplicationSuccess(true);
+        setApplicationMessage("");
+      } else {
+        throw new Error(response.message || "Application submission failed.");
+      }
+    } catch (requestError) {
+      console.error("Application Submission Error:", requestError);
+
+      setApplicationError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   if (loading || authLoading) {
     return <DetailsSkeleton />;
@@ -359,6 +437,148 @@ export default function TuitionDetailsPage() {
                 </div>
               </div>
             </section>
+
+            {/* Student Application Form */}
+            {isStudent && (
+              <section
+                id="apply"
+                className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7"
+              >
+                <div className="mb-6">
+                  <p className="text-xs font-bold uppercase tracking-wider text-primary">
+                    Student Application
+                  </p>
+
+                  <h2 className="mt-2 text-xl font-bold sm:text-2xl">
+                    Apply for This Tuition
+                  </h2>
+
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Introduce yourself to the tutor. You can mention your
+                    learning goals, availability, or any questions.
+                  </p>
+                </div>
+
+                {applicationSuccess ? (
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-center">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
+                      <Check size={28} />
+                    </div>
+
+                    <h3 className="mt-4 text-lg font-bold">
+                      Application Submitted!
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      Your application has been sent successfully. The tutor can
+                      now review your application.
+                    </p>
+
+                    <Link
+                      href="/dashboard"
+                      className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:opacity-90"
+                    >
+                      Go to Dashboard
+                    </Link>
+                  </div>
+                ) : (
+                  <form
+                    onSubmit={handleApplicationSubmit}
+                    className="space-y-5"
+                  >
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold">
+                          Your Name
+                        </label>
+
+                        <input
+                          type="text"
+                          value={user?.name || ""}
+                          readOnly
+                          className="h-11 w-full rounded-xl border border-border bg-muted/50 px-4 text-sm text-muted-foreground outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold">
+                          Your Email
+                        </label>
+
+                        <input
+                          type="email"
+                          value={user?.email || ""}
+                          readOnly
+                          className="h-11 w-full rounded-xl border border-border bg-muted/50 px-4 text-sm text-muted-foreground outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="applicationMessage"
+                        className="mb-2 block text-sm font-semibold"
+                      >
+                        Message to Tutor
+                        <span className="ml-1 text-destructive">*</span>
+                      </label>
+
+                      <textarea
+                        id="applicationMessage"
+                        value={applicationMessage}
+                        onChange={(event) =>
+                          setApplicationMessage(event.target.value)
+                        }
+                        placeholder="Hello, I am interested in this tuition. I would like to know more about the schedule..."
+                        rows={5}
+                        minLength={10}
+                        maxLength={1000}
+                        required
+                        disabled={submitting}
+                        className="w-full resize-y rounded-xl border border-border bg-background px-4 py-3 text-sm leading-6 outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      />
+
+                      <p className="mt-2 text-right text-xs text-muted-foreground">
+                        {applicationMessage.length}/1000 characters
+                      </p>
+                    </div>
+
+                    {applicationError && (
+                      <div
+                        role="alert"
+                        className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+                      >
+                        <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                        <p>{applicationError}</p>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={submitting || !applicationMessage.trim()}
+                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-52"
+                    >
+                      {submitting ? (
+                        <>
+                          <LoaderCircle size={18} className="animate-spin" />
+                          Submitting Application...
+                        </>
+                      ) : (
+                        <>
+                          <Send size={17} />
+                          Submit Application
+                        </>
+                      )}
+                    </button>
+
+                    <p className="text-xs leading-5 text-muted-foreground">
+                      Your application will be submitted securely using your
+                      student account.
+                    </p>
+                  </form>
+                )}
+              </section>
+            )}
           </div>
 
           {/* Fee Sidebar */}
@@ -423,13 +643,20 @@ export default function TuitionDetailsPage() {
                       Apply for this tuition and connect with the tutor.
                     </p>
 
-                    <Link
-                      href="#apply"
-                      className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:opacity-90"
-                    >
-                      <Send size={16} />
-                      Apply for Tuition
-                    </Link>
+                    {applicationSuccess ? (
+                      <div className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500/10 text-sm font-bold text-emerald-600">
+                        <Check size={17} />
+                        Application Submitted
+                      </div>
+                    ) : (
+                      <a
+                        href="#apply"
+                        className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:opacity-90"
+                      >
+                        <Send size={16} />
+                        Apply for Tuition
+                      </a>
+                    )}
                   </>
                 )}
 

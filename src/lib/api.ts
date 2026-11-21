@@ -13,9 +13,13 @@ export async function apiRequest<T>(
     cache: "no-store",
   });
 
+  const result = await response.json().catch(() => null);
+
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    throw new Error(
+      result?.message || `API request failed: ${response.status}`,
+    );
   }
 
-  return response.json() as Promise<T>;
+  return result as T;
 }

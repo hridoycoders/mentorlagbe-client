@@ -85,30 +85,85 @@ function TuitionSkeleton() {
 
 export default function TuitionsPage() {
   const [tuitions, setTuitions] = useState<Tuition[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [retryCount, setRetryCount] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [submittedSearch, setSubmittedSearch] = useState("");
+
   const [selectedSubject, setSelectedSubject] = useState("all");
   const [selectedClass, setSelectedClass] = useState("all");
   const [selectedMode, setSelectedMode] = useState("all");
 
+  // Read the subject query from homepage category links
+  useEffect(() => {
+    async function readInitialSubject() {
+      await Promise.resolve();
+
+      const params = new URLSearchParams(window.location.search);
+      const subject = params.get("subject");
+
+      if (subject?.trim()) {
+        setSelectedSubject(subject.trim());
+      }
+    }
+
+    readInitialSubject();
+  }, []);
+
+  // Fetch filtered tuition data from the backend
   useEffect(() => {
     let active = true;
 
     async function loadTuitions() {
       try {
+        await Promise.resolve();
+
+        if (!active) return;
+
+        setLoading(true);
         setError("");
 
-        const response = await apiRequest<TuitionApiResponse>("/api/tuitions");
+        const params = new URLSearchParams();
+
+        if (submittedSearch.trim()) {
+          params.set("search", submittedSearch.trim());
+        }
+
+        if (selectedSubject !== "all") {
+          params.set("subject", selectedSubject);
+        }
+
+        if (selectedClass !== "all") {
+          params.set("classLevel", selectedClass);
+        }
+
+        if (selectedMode !== "all") {
+          params.set("mode", selectedMode);
+        }
+
+        const queryString = params.toString();
+
+        const endpoint = queryString
+          ? `/api/tuitions/search?${queryString}`
+          : "/api/tuitions/search";
+
+        const response = await apiRequest<TuitionApiResponse>(endpoint);
 
         if (active) {
           setTuitions(response.data || []);
+          setTotalCount(response.total || 0);
         }
-      } catch {
+      } catch (requestError) {
+        console.error("Tuition Search Error:", requestError);
+
         if (active) {
           setError("Unable to load tuition opportunities. Please try again.");
+          setTuitions([]);
+          setTotalCount(0);
         }
       } finally {
         if (active) {
@@ -122,56 +177,47 @@ export default function TuitionsPage() {
     return () => {
       active = false;
     };
-  }, [retryCount]);
+  }, [
+    submittedSearch,
+    selectedSubject,
+    selectedClass,
+    selectedMode,
+    retryCount,
+  ]);
 
-  const subjects = useMemo(
-    () => [...new Set(tuitions.map((tuition) => tuition.subject))].sort(),
-    [tuitions],
-  );
+  // Build dropdown options from available tuition data
+  const subjects = useMemo(() => {
+    const availableSubjects = tuitions.map((tuition) => tuition.subject);
+
+    if (selectedSubject !== "all") {
+      availableSubjects.push(selectedSubject);
+    }
+
+    return [...new Set(availableSubjects)].sort();
+  }, [tuitions, selectedSubject]);
 
   const classLevels = useMemo(
     () => [...new Set(tuitions.map((tuition) => tuition.classLevel))].sort(),
     [tuitions],
   );
 
-  const filteredTuitions = useMemo(() => {
-    const keyword = searchTerm.trim().toLowerCase();
-
-    return tuitions.filter((tuition) => {
-      const title = (tuition.title || "").toLowerCase();
-      const subject = (tuition.subject || "").toLowerCase();
-      const tutorName = (tuition.tutorName || "").toLowerCase();
-      const description = (tuition.description || "").toLowerCase();
-      const mode = (tuition.mode || "").toLowerCase();
-
-      const matchesSearch =
-        !keyword ||
-        title.includes(keyword) ||
-        subject.includes(keyword) ||
-        tutorName.includes(keyword) ||
-        description.includes(keyword);
-
-      const matchesSubject =
-        selectedSubject === "all" || tuition.subject === selectedSubject;
-
-      const matchesClass =
-        selectedClass === "all" || tuition.classLevel === selectedClass;
-
-      const matchesMode = selectedMode === "all" || mode === selectedMode;
-
-      return matchesSearch && matchesSubject && matchesClass && matchesMode;
-    });
-  }, [tuitions, searchTerm, selectedSubject, selectedClass, selectedMode]);
+  function handleSearch(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmittedSearch(searchTerm.trim());
+  }
 
   function handleReset() {
     setSearchTerm("");
+    setSubmittedSearch("");
     setSelectedSubject("all");
     setSelectedClass("all");
     setSelectedMode("all");
+
+    // Remove old category query from the URL
+    window.history.replaceState({}, "", window.location.pathname);
   }
 
   function handleRetry() {
-    setLoading(true);
     setRetryCount((previous) => previous + 1);
   }
 
@@ -219,7 +265,7 @@ export default function TuitionsPage() {
         {/* Search and Filters */}
         <div className="mb-8 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
           <form
-            onSubmit={(event) => event.preventDefault()}
+            onSubmit={handleSearch}
             className="flex flex-col gap-3 sm:flex-row"
           >
             <div className="relative flex-1">
@@ -314,8 +360,8 @@ export default function TuitionsPage() {
                 className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary"
               >
                 <option value="all">All Modes</option>
-                <option value="online">Online</option>
-                <option value="offline">Offline</option>
+                <option value="Online">Online</option>
+                <option value="Offline">Offline</option>
               </select>
             </div>
 
@@ -339,13 +385,9 @@ export default function TuitionsPage() {
             <p className="text-sm text-muted-foreground">
               Showing{" "}
               <span className="font-semibold text-foreground">
-                {filteredTuitions.length}
+                {totalCount}
               </span>{" "}
-              of{" "}
-              <span className="font-semibold text-foreground">
-                {tuitions.length}
-              </span>{" "}
-              tuitions
+              {totalCount === 1 ? "tuition" : "tuitions"}
             </p>
           </div>
         )}
@@ -370,7 +412,7 @@ export default function TuitionsPage() {
               Try Again
             </button>
           </div>
-        ) : filteredTuitions.length === 0 ? (
+        ) : tuitions.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card px-5 py-14 text-center">
             <Search className="mx-auto mb-4 text-muted-foreground" size={40} />
 
@@ -395,7 +437,7 @@ export default function TuitionsPage() {
         ) : (
           /* Tuition Cards */
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredTuitions.map((tuition) => (
+            {tuitions.map((tuition) => (
               <article
                 key={tuition._id}
                 className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card p-0 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl"

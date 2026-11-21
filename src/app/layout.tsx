@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import "./globals.css";
 import Providers from "@/components/providers";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import RoleBasedAppLayout from "@/components/layout/RoleBasedAppLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,19 +32,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased`}
       >
         <Providers>
-          <div className="flex min-h-screen flex-col">
-            <Suspense
-              fallback={
-                <div className="h-17 w-full animate-pulse border-b border-border bg-background" />
-              }
-            >
-              <Navbar />
-            </Suspense>
-
-            <main className="flex-1">{children}</main>
-
-            <Footer />
-          </div>
+          <RoleBasedAppLayout>{children}</RoleBasedAppLayout>
         </Providers>
       </body>
     </html>

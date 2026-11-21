@@ -23,10 +23,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const dashboardPath = getDashboardPath(role);
 
   const isProfilePage = pathname === "/dashboard/profile";
-  const isRoleDashboard =
-    pathname === "/dashboard/student" ||
-    pathname === "/dashboard/tutor" ||
-    pathname === "/dashboard/admin";
+  const isDashboardRoot = pathname === "/dashboard";
+
+  const isAllowedDashboardPath =
+    pathname === dashboardPath || pathname.startsWith(`${dashboardPath}/`);
 
   useEffect(() => {
     if (isPending) return;
@@ -36,24 +36,37 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (pathname === "/dashboard") {
+    if (isDashboardRoot) {
       router.replace(dashboardPath);
       return;
     }
 
-    if (isRoleDashboard && pathname !== dashboardPath) {
+    if (!isProfilePage && !isAllowedDashboardPath) {
       router.replace(dashboardPath);
     }
-  }, [isPending, session, pathname, dashboardPath, isRoleDashboard, router]);
+  }, [
+    isPending,
+    session,
+    isDashboardRoot,
+    isProfilePage,
+    isAllowedDashboardPath,
+    dashboardPath,
+    router,
+  ]);
 
   if (
     isPending ||
     !session?.user ||
-    (!isProfilePage && (!isRoleDashboard || pathname !== dashboardPath))
+    (!isProfilePage && !isAllowedDashboardPath)
   ) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="animate-spin text-primary" size={32} />
+      <div className="flex min-h-[60vh] items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="animate-spin text-primary" size={32} />
+          <p className="text-sm text-muted-foreground">
+            Verifying your dashboard access...
+          </p>
+        </div>
       </div>
     );
   }

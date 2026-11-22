@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import "./globals.css";
@@ -32,7 +33,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased`}
       >
         <Providers>
-          <RoleBasedAppLayout>{children}</RoleBasedAppLayout>
+          <Suspense
+            fallback={
+              <div className="flex min-h-screen items-center justify-center bg-background">
+                <div className="animate-spin rounded-full border-4 border-primary border-t-transparent size-8" />
+              </div>
+            }
+          >
+            <RoleBasedAppLayout>{children}</RoleBasedAppLayout>
+          </Suspense>
         </Providers>
       </body>
     </html>

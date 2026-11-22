@@ -18,9 +18,7 @@ interface RoleBasedAppLayoutProps {
   children: ReactNode;
 }
 
-export default function RoleBasedAppLayout({
-  children,
-}: RoleBasedAppLayoutProps) {
+function RoleBasedAppLayoutContent({ children }: RoleBasedAppLayoutProps) {
   const pathname = usePathname();
   const { data: session, isPending } = useSession();
 
@@ -64,17 +62,27 @@ export default function RoleBasedAppLayout({
   // Public website layout for every other route
   return (
     <div className="flex min-h-screen flex-col">
-      <Suspense
-        fallback={
-          <div className="h-17 w-full animate-pulse border-b border-border bg-background" />
-        }
-      >
-        <Navbar />
-      </Suspense>
+      <Navbar />
 
       <main className="flex-1">{children}</main>
 
       <Footer />
     </div>
+  );
+}
+
+export default function RoleBasedAppLayout({
+  children,
+}: RoleBasedAppLayoutProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <Loader2 className="animate-spin text-primary" size={32} />
+        </div>
+      }
+    >
+      <RoleBasedAppLayoutContent>{children}</RoleBasedAppLayoutContent>
+    </Suspense>
   );
 }

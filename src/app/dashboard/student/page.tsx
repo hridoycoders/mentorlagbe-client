@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
+import { useCheckout } from "@/lib/use-checkout";
 import {
   ArrowRight,
   BookOpen,
@@ -12,6 +13,7 @@ import {
   Crown,
   GraduationCap,
   Lightbulb,
+  Loader2,
   Search,
 } from "lucide-react";
 
@@ -30,6 +32,7 @@ const quickActions = [
     action: "Find a Tutor",
     icon: Search,
     iconStyle: "bg-primary/10 text-primary",
+    checkout: false,
   },
   {
     title: "My Applications",
@@ -39,6 +42,7 @@ const quickActions = [
     action: "View Applications",
     icon: ClipboardList,
     iconStyle: "bg-emerald-500/10 text-emerald-600",
+    checkout: false,
   },
   {
     title: "Student Pro Plan",
@@ -48,11 +52,13 @@ const quickActions = [
     action: "Explore Pro Plan",
     icon: Crown,
     iconStyle: "bg-amber-500/10 text-amber-600",
+    checkout: true,
   },
 ];
 
 export default function StudentDashboardPage() {
   const { data: session } = useSession();
+  const { startCheckout, isProcessing } = useCheckout();
 
   const [applications, setApplications] = useState<StudentApplication[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -359,13 +365,24 @@ export default function StudentDashboardPage() {
             </ul>
 
             {!isPro && (
-              <Link
-                href="/pricing"
-                className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+              <button
+                type="button"
+                onClick={() => void startCheckout()}
+                disabled={isProcessing}
+                className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Explore Pro Plan
-                <ArrowRight size={16} />
-              </Link>
+                {isProcessing ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Preparing checkout...
+                  </>
+                ) : (
+                  <>
+                    Upgrade to Pro
+                    <ArrowRight size={16} />
+                  </>
+                )}
+              </button>
             )}
           </div>
         </div>
@@ -405,13 +422,34 @@ export default function StudentDashboardPage() {
                   {item.description}
                 </p>
 
-                <Link
-                  href={item.href}
-                  className="mt-5 inline-flex w-fit items-center gap-2 text-sm font-semibold text-primary transition hover:gap-3"
-                >
-                  {item.action}
-                  <ArrowRight size={16} />
-                </Link>
+                {item.checkout ? (
+                  <button
+                    type="button"
+                    onClick={() => void startCheckout()}
+                    disabled={isProcessing}
+                    className="mt-5 inline-flex w-fit items-center gap-2 text-sm font-semibold text-primary transition hover:gap-3 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Preparing checkout...
+                      </>
+                    ) : (
+                      <>
+                        {item.action}
+                        <ArrowRight size={16} />
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className="mt-5 inline-flex w-fit items-center gap-2 text-sm font-semibold text-primary transition hover:gap-3"
+                  >
+                    {item.action}
+                    <ArrowRight size={16} />
+                  </Link>
+                )}
               </div>
             );
           })}

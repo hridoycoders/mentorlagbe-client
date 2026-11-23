@@ -1,5 +1,16 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowRight, Check, Crown, Sparkles, Users } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  Crown,
+  Loader2,
+  Sparkles,
+  Users,
+} from "lucide-react";
+
+import { useCheckout } from "@/lib/use-checkout";
 
 const plans = [
   {
@@ -21,6 +32,7 @@ const plans = [
     buttonText: "Get Started Free",
     href: "/sign-up",
     popular: false,
+    checkout: false,
   },
   {
     name: "Pro Plan",
@@ -44,10 +56,13 @@ const plans = [
     buttonText: "Upgrade to Pro",
     href: "/pricing",
     popular: true,
+    checkout: true,
   },
 ];
 
 export default function PricingSection() {
+  const { startCheckout, isProcessing } = useCheckout();
+
   return (
     <section className="container py-9 sm:py-12 lg:py-16">
       {/* Section Heading */}
@@ -180,17 +195,42 @@ export default function PricingSection() {
               </ul>
 
               {/* CTA */}
-              <Link
-                href={plan.href}
-                className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg px-3 text-xs font-semibold transition sm:h-11 sm:rounded-xl sm:px-4 sm:text-sm ${
-                  plan.popular
-                    ? "bg-primary text-primary-foreground hover:opacity-90"
-                    : "border border-border bg-background text-foreground hover:border-primary hover:text-primary"
-                }`}
-              >
-                {plan.buttonText}
-                <ArrowRight size={15} />
-              </Link>
+              {plan.checkout ? (
+                <button
+                  type="button"
+                  onClick={() => void startCheckout()}
+                  disabled={isProcessing}
+                  className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg px-3 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 sm:h-11 sm:rounded-xl sm:px-4 sm:text-sm ${
+                    plan.popular
+                      ? "bg-primary text-primary-foreground hover:opacity-90"
+                      : "border border-border bg-background text-foreground hover:border-primary hover:text-primary"
+                  }`}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 size={15} className="animate-spin" />
+                      Preparing checkout...
+                    </>
+                  ) : (
+                    <>
+                      {plan.buttonText}
+                      <ArrowRight size={15} />
+                    </>
+                  )}
+                </button>
+              ) : (
+                <Link
+                  href={plan.href}
+                  className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg px-3 text-xs font-semibold transition sm:h-11 sm:rounded-xl sm:px-4 sm:text-sm ${
+                    plan.popular
+                      ? "bg-primary text-primary-foreground hover:opacity-90"
+                      : "border border-border bg-background text-foreground hover:border-primary hover:text-primary"
+                  }`}
+                >
+                  {plan.buttonText}
+                  <ArrowRight size={15} />
+                </Link>
+              )}
             </article>
           );
         })}

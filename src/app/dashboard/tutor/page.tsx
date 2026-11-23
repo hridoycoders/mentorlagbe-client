@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
+import { useCheckout } from "@/lib/use-checkout";
 import {
   ArrowRight,
   BookOpen,
@@ -9,6 +10,7 @@ import {
   Crown,
   GraduationCap,
   Lightbulb,
+  Loader2,
   PlusCircle,
   Users,
 } from "lucide-react";
@@ -45,6 +47,7 @@ const quickActions = [
 
 export default function TutorDashboardPage() {
   const { data: session } = useSession();
+  const { startCheckout, isProcessing } = useCheckout();
 
   const user = session?.user as
     | {
@@ -209,13 +212,24 @@ export default function TutorDashboardPage() {
             </ul>
 
             {!isPro && (
-              <Link
-                href="/pricing"
-                className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+              <button
+                type="button"
+                onClick={() => void startCheckout()}
+                disabled={isProcessing}
+                className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Explore Pro Plan
-                <ArrowRight size={16} />
-              </Link>
+                {isProcessing ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Preparing checkout...
+                  </>
+                ) : (
+                  <>
+                    Upgrade to Pro
+                    <ArrowRight size={16} />
+                  </>
+                )}
+              </button>
             )}
           </div>
         </div>

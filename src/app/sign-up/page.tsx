@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { signUp } from "@/lib/auth-client";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,12 +73,14 @@ export default function SignUpPage() {
         return;
       }
 
+      toast.success("Account created successfully!");
+
      router.push(getDashboardPath(role));
      router.refresh();
 
     } catch (err) {
       console.error("Registration error:", err);
-      setError("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

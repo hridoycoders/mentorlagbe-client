@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { signIn, useSession } from "@/lib/auth-client";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,7 +49,7 @@ export default function SignInPage() {
       });
 
       if (result.error) {
-        setError(result.error.message || "Invalid email or password.");
+        toast.error(result.error.message || "Invalid email or password.");
         return;
       }
 
@@ -59,7 +60,7 @@ export default function SignInPage() {
       router.refresh();
     } catch (err) {
       console.error("Login error:", err);
-      setError("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

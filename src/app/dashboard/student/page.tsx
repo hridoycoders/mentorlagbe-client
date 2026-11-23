@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSession } from "@/lib/auth-client";
+import { apiRequest } from "@/lib/api";
+import { authClient, useSession } from "@/lib/auth-client";
 import { useCheckout } from "@/lib/use-checkout";
 import {
+  AlertCircle,
   ArrowRight,
   BookOpen,
   CheckCircle2,
@@ -17,11 +19,27 @@ import {
   Search,
 } from "lucide-react";
 
-interface StudentApplication {
-  _id?: string;
-  id?: string;
-  status?: "pending" | "accepted" | "rejected" | string;
+interface StudentStats {
+  plan: string;
+  totalApplications: number;
+  pendingApplications: number;
+  acceptedApplications: number;
+  rejectedApplications: number;
 }
+
+interface StudentStatsResponse {
+  success: boolean;
+  message: string;
+  data: StudentStats;
+}
+
+const EMPTY_STATS: StudentStats = {
+  plan: "free",
+  totalApplications: 0,
+  pendingApplications: 0,
+  acceptedApplications: 0,
+  rejectedApplications: 0,
+};
 
 const quickActions = [
   {
@@ -60,85 +78,80 @@ export default function StudentDashboardPage() {
   const { data: session } = useSession();
   const { startCheckout, isProcessing } = useCheckout();
 
-  const [applications, setApplications] = useState<StudentApplication[]>([]);
+  const [stats, setStats] = useState<StudentStats>(EMPTY_STATS);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [statsError, setStatsError] = useState("");
 
   const user = session?.user as
     | {
         name?: string;
-        email?: string;
         plan?: string;
       }
     | undefined;
 
   const studentName = user?.name?.trim().split(" ")[0] || "Student";
-  const studentEmail = user?.email || "";
-  const plan = user?.plan?.toLowerCase() || "free";
+  const plan = (user?.plan || stats.plan || "free").toLowerCase();
   const isPro = plan === "pro";
 
   useEffect(() => {
     let active = true;
 
-    const loadApplications = async () => {
+    const loadStats = async () => {
       try {
-        const apiBase =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-        const token =
-          typeof window !== "undefined"
-            ? localStorage.getItem("accessToken") ||
-              localStorage.getItem("token") ||
-              ""
-            : "";
+        setStatsError("");
 
-        const query = studentEmail
-          ? `?studentEmail=${encodeURIComponent(studentEmail)}`
-          : "";
+        const { data: tokenData, error: tokenError } = await authClient.token();
 
-        const res = await fetch(`${apiBase}/api/applications/student${query}`, {
-          credentials: "include",
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        });
-
-        if (!res.ok) {
-          if (active) setApplications([]);
-          return;
+        if (tokenError || !tokenData?.token) {
+          throw new Error(
+            "Your login session could not be verified. Please sign in again.",
+          );
         }
 
-        const data = await res.json();
-        const list = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.applications)
-            ? data.applications
-            : Array.isArray(data?.data)
-              ? data.data
-              : [];
+        const response = await apiRequest<StudentStatsResponse>(
+          "/api/dashboard/stats/student",
+          {
+            headers: {
+              Authorization: `Bearer ${tokenData.token}`,
+            },
+          },
+        );
 
-        if (active) setApplications(list);
-      } catch {
-        if (active) setApplications([]);
+        if (!response.success || !response.data) {
+          throw new Error(
+            response.message || "Could not load dashboard statistics.",
+          );
+        }
+
+        if (active) {
+          setStats({
+            plan: response.data.plan || "free",
+            totalApplications: response.data.totalApplications ?? 0,
+            pendingApplications: response.data.pendingApplications ?? 0,
+            acceptedApplications: response.data.acceptedApplications ?? 0,
+            rejectedApplications: response.data.rejectedApplications ?? 0,
+          });
+        }
+      } catch (err) {
+        if (active) {
+          setStats(EMPTY_STATS);
+          setStatsError(
+            err instanceof Error
+              ? err.message
+              : "Could not load dashboard statistics.",
+          );
+        }
       } finally {
         if (active) setLoadingStats(false);
       }
     };
 
-    loadApplications();
+    void loadStats();
 
     return () => {
       active = false;
     };
-  }, [studentEmail]);
-
-  const stats = useMemo(() => {
-    const totalApplied = applications.length;
-    const acceptedCount = applications.filter(
-      (item) => item.status?.toLowerCase() === "accepted",
-    ).length;
-    const pendingCount = applications.filter(
-      (item) => !item.status || item.status.toLowerCase() === "pending",
-    ).length;
-
-    return { totalApplied, acceptedCount, pendingCount };
-  }, [applications]);
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -196,6 +209,15 @@ export default function StudentDashboardPage() {
 
       {/* Stats Cards */}
       <section aria-label="Student overview metrics">
+        {statsError && !loadingStats && (
+          <div
+            role="alert"
+            className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-700 dark:text-amber-300"
+          >
+            <AlertCircle size={16} className="mt-0.5 shrink-0" />
+            <span>{statsError}</span>
+          </div>
+        )}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between">
@@ -207,7 +229,7 @@ export default function StudentDashboardPage() {
               </div>
             </div>
             <p className="mt-3 text-2xl font-bold text-foreground">
-              {loadingStats ? "..." : stats.totalApplied}
+              {loadingStats ? "..." : stats.totalApplications}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Total applications submitted
@@ -224,7 +246,7 @@ export default function StudentDashboardPage() {
               </div>
             </div>
             <p className="mt-3 text-2xl font-bold text-foreground">
-              {loadingStats ? "..." : stats.acceptedCount}
+              {loadingStats ? "..." : stats.acceptedApplications}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Approved by tutors
@@ -241,7 +263,7 @@ export default function StudentDashboardPage() {
               </div>
             </div>
             <p className="mt-3 text-2xl font-bold text-foreground">
-              {loadingStats ? "..." : stats.pendingCount}
+              {loadingStats ? "..." : stats.pendingApplications}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Waiting for tutor review

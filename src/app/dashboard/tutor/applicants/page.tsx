@@ -34,6 +34,9 @@ type Applicant = {
   studentId: string;
   studentName: string;
   studentEmail: string;
+  studentPhone?: string;
+  preferredSchedule?: string;
+  studentNote?: string;
   message: string;
   status: ApplicationStatus;
   createdAt: string;
@@ -615,6 +618,38 @@ export default function TutorApplicantsPage() {
 
                   <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm leading-7 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                     {selectedApplicant.message || "No message provided."}
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Student Phone
+                    </p>
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                      {selectedApplicant.studentPhone || "Not provided"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+                    <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      <Clock3 size={13} />
+                      Preferred Schedule
+                    </p>
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                      {selectedApplicant.preferredSchedule || "Not provided"}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="mb-2 flex items-center gap-2 text-sm font-bold">
+                    <MessageSquare size={16} className="text-indigo-500" />
+                    Learning Note
+                  </h4>
+
+                  <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm leading-7 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                    {selectedApplicant.studentNote || "Not provided"}
                   </div>
                 </div>
 

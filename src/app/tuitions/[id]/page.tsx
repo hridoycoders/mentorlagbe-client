@@ -110,6 +110,20 @@ function DetailsSkeleton() {
   );
 }
 
+const SCHEDULE_OPTIONS = ["Morning", "Afternoon", "Evening", "Flexible"];
+
+function isValidPhone(value: string): boolean {
+  const trimmed = value.trim();
+
+  if (!/^\+?[\d\s()-]+$/.test(trimmed)) {
+    return false;
+  }
+
+  const digits = trimmed.replace(/\D/g, "");
+
+  return digits.length >= 7 && digits.length <= 15;
+}
+
 export default function TuitionDetailsPage() {
   const params = useParams<{ id: string }>();
   const tuitionId = params.id;
@@ -131,6 +145,9 @@ export default function TuitionDetailsPage() {
   const [error, setError] = useState("");
 
   const [applicationMessage, setApplicationMessage] = useState("");
+  const [studentPhone, setStudentPhone] = useState("");
+  const [preferredSchedule, setPreferredSchedule] = useState("");
+  const [studentNote, setStudentNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [applicationError, setApplicationError] = useState("");
   const [applicationSuccess, setApplicationSuccess] = useState(false);
@@ -188,6 +205,27 @@ export default function TuitionDetailsPage() {
       return;
     }
 
+    if (!isValidPhone(studentPhone)) {
+      setApplicationError(
+        "Please enter a valid phone number (7–15 digits, international format allowed).",
+      );
+      return;
+    }
+
+    if (!SCHEDULE_OPTIONS.includes(preferredSchedule)) {
+      setApplicationError("Please select your preferred schedule.");
+      return;
+    }
+
+    const trimmedNote = studentNote.trim();
+
+    if (trimmedNote.length < 10 || trimmedNote.length > 1000) {
+      setApplicationError(
+        "Learning note must be between 10 and 1000 characters.",
+      );
+      return;
+    }
+
     try {
       setSubmitting(true);
       setApplicationError("");
@@ -212,6 +250,9 @@ export default function TuitionDetailsPage() {
           body: JSON.stringify({
             tuitionId,
             message: applicationMessage.trim(),
+            studentPhone: studentPhone.trim(),
+            preferredSchedule,
+            studentNote: trimmedNote,
           }),
         },
       );
@@ -219,6 +260,9 @@ export default function TuitionDetailsPage() {
       if (response.success) {
         setApplicationSuccess(true);
         setApplicationMessage("");
+        setStudentPhone("");
+        setPreferredSchedule("");
+        setStudentNote("");
       } else {
         throw new Error(response.message || "Application submission failed.");
       }
@@ -512,6 +556,90 @@ export default function TuitionDetailsPage() {
                           className="h-11 w-full rounded-xl border border-border bg-muted/50 px-4 text-sm text-muted-foreground outline-none"
                         />
                       </div>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label
+                          htmlFor="studentPhone"
+                          className="mb-2 block text-sm font-semibold"
+                        >
+                          Student Phone
+                          <span className="ml-1 text-destructive">*</span>
+                        </label>
+
+                        <input
+                          id="studentPhone"
+                          type="tel"
+                          value={studentPhone}
+                          onChange={(event) =>
+                            setStudentPhone(event.target.value)
+                          }
+                          placeholder="e.g. +8801712345678"
+                          required
+                          disabled={submitting}
+                          className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="preferredSchedule"
+                          className="mb-2 block text-sm font-semibold"
+                        >
+                          Preferred Schedule
+                          <span className="ml-1 text-destructive">*</span>
+                        </label>
+
+                        <select
+                          id="preferredSchedule"
+                          value={preferredSchedule}
+                          onChange={(event) =>
+                            setPreferredSchedule(event.target.value)
+                          }
+                          required
+                          disabled={submitting}
+                          className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <option value="" disabled>
+                            Select a schedule
+                          </option>
+                          {SCHEDULE_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="studentNote"
+                        className="mb-2 block text-sm font-semibold"
+                      >
+                        Learning Note
+                        <span className="ml-1 text-destructive">*</span>
+                      </label>
+
+                      <textarea
+                        id="studentNote"
+                        value={studentNote}
+                        onChange={(event) =>
+                          setStudentNote(event.target.value)
+                        }
+                        placeholder="Tell the tutor about your learning goals and current level..."
+                        rows={4}
+                        minLength={10}
+                        maxLength={1000}
+                        required
+                        disabled={submitting}
+                        className="w-full resize-y rounded-xl border border-border bg-background px-4 py-3 text-sm leading-6 outline-none transition placeholder:text-muted-foreground/70 focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      />
+
+                      <p className="mt-2 text-right text-xs text-muted-foreground">
+                        {studentNote.length}/1000 characters
+                      </p>
                     </div>
 
                     <div>

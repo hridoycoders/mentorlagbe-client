@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -259,8 +260,14 @@ export default function TutorApplicantsPage() {
       setSelectedApplicant((previous) =>
         previous?._id === id ? result.data : previous,
       );
+
+      toast.success(
+        status === "accepted"
+          ? "Application accepted successfully."
+          : "Application rejected successfully.",
+      );
     } catch (err) {
-      setActionError(
+      toast.error(
         err instanceof Error
           ? err.message
           : "Failed to update application status.",

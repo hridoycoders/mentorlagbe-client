@@ -17,6 +17,7 @@ import {
 
 import { apiRequest } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 interface StudentApplication {
   _id: string;
@@ -262,10 +263,12 @@ useEffect(() => {
       }
 
       await loadApplications(false);
+
+      toast.success("Application cancelled successfully.");
     } catch (requestError) {
       console.error("Cancel Application Error:", requestError);
 
-      setError(
+      toast.error(
         requestError instanceof Error
           ? requestError.message
           : "Something went wrong while cancelling the application.",

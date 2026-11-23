@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 type UserRole = "student" | "tutor" | "admin";
 
@@ -72,7 +73,6 @@ export default function AdminUsersPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   // Authentication headers
   const getAuthHeaders = useCallback(async () => {
@@ -162,7 +162,6 @@ export default function AdminUsersPage() {
   const handleRefresh = () => {
     setLoading(true);
     setError("");
-    setSuccess("");
     void loadUsers();
   };
 
@@ -203,7 +202,6 @@ export default function AdminUsersPage() {
 
     setUpdatingId(user._id);
     setError("");
-    setSuccess("");
 
     try {
       const headers = await getAuthHeaders();
@@ -229,9 +227,9 @@ export default function AdminUsersPage() {
         ),
       );
 
-      setSuccess(`${user.name}'s role updated to ${role}.`);
+      toast.success(`${user.name}'s role updated to ${role}.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update role.");
+      toast.error(err instanceof Error ? err.message : "Failed to update role.");
     } finally {
       setUpdatingId(null);
     }
@@ -249,7 +247,6 @@ export default function AdminUsersPage() {
 
     setUpdatingId(user._id);
     setError("");
-    setSuccess("");
 
     try {
       const headers = await getAuthHeaders();
@@ -274,13 +271,13 @@ export default function AdminUsersPage() {
         [user._id]: isActive,
       }));
 
-      setSuccess(
+      toast.success(
         `${user.name}'s account ${
           isActive ? "activated" : "deactivated"
         } successfully.`,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update status.");
+      toast.error(err instanceof Error ? err.message : "Failed to update status.");
     } finally {
       setUpdatingId(null);
     }
@@ -355,17 +352,6 @@ export default function AdminUsersPage() {
         >
           <AlertCircle size={18} className="mt-0.5 shrink-0" />
           <p>{error}</p>
-        </div>
-      )}
-
-      {/* Success Message */}
-      {success && (
-        <div
-          role="status"
-          className="flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm text-emerald-600 dark:text-emerald-400"
-        >
-          <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
-          <p>{success}</p>
         </div>
       )}
 

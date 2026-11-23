@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   BookOpen,
   CalendarDays,
-  CheckCircle2,
   GraduationCap,
   ImagePlus,
   MapPin,
@@ -18,6 +17,7 @@ import {
 
 import { authClient } from "@/lib/auth-client";
 import { apiRequest } from "@/lib/api";
+import { toast } from "sonner";
 
 interface TuitionResponse {
   success: boolean;
@@ -57,7 +57,6 @@ export default function CreateTuitionPage() {
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const updateField = (field: keyof typeof initialForm, value: string) => {
     setForm((previous) => ({ ...previous, [field]: value }));
@@ -148,7 +147,6 @@ export default function CreateTuitionPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
-    setSuccess("");
 
     const minFee = Number(form.salaryMin);
     const maxFee = Number(form.salaryMax);
@@ -218,10 +216,7 @@ export default function CreateTuitionPage() {
         throw new Error(response.message || "Failed to create tuition.");
       }
 
-      setSuccess(
-        response.message ||
-          "Tuition created successfully. Waiting for admin approval.",
-      );
+      toast.success("Tuition posted successfully.");
 
       setForm(initialForm);
       setImageFile(null);
@@ -239,7 +234,7 @@ export default function CreateTuitionPage() {
     } catch (requestError) {
       console.error("Create Tuition Error:", requestError);
 
-      setError(
+      toast.error(
         requestError instanceof Error
           ? requestError.message
           : "Something went wrong. Please try again.",
@@ -599,16 +594,6 @@ export default function CreateTuitionPage() {
             className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive lg:col-span-2"
           >
             {error}
-          </div>
-        )}
-
-        {success && (
-          <div
-            role="status"
-            className="flex items-center gap-2 rounded-lg border border-green-500/20 bg-green-500/5 p-3 text-sm text-green-600 lg:col-span-2"
-          >
-            <CheckCircle2 size={17} />
-            {success}
           </div>
         )}
 

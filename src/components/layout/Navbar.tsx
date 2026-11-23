@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { authClient, signOut } from "@/lib/auth-client";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const navLinks = [
@@ -157,6 +158,7 @@ export default function Navbar() {
       router.refresh();
     } catch (error) {
       console.error("Logout failed:", error);
+      toast.error("Logout failed. Please try again.");
     }
   }
 

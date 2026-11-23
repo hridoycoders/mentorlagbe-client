@@ -17,12 +17,12 @@ import {
   Save,
   Loader2,
   Crown,
-  CheckCircle2,
   AlertCircle,
   ShieldCheck,
 } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
@@ -64,7 +64,6 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
 
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   // Load profile
   useEffect(() => {
@@ -127,7 +126,6 @@ export default function ProfilePage() {
     if (!file) return;
 
     setError("");
-    setSuccess("");
 
     if (!file.type.startsWith("image/")) {
       setError("Please select a valid image.");
@@ -172,11 +170,12 @@ export default function ProfilePage() {
 
       setImage(result.data.url);
       setPreview(result.data.url);
-      setSuccess("Profile photo uploaded. Save your changes.");
+
+      toast.success("Profile photo uploaded. Save your changes.");
     } catch (err) {
       setPreview(image);
 
-      setError(err instanceof Error ? err.message : "Image upload failed.");
+      toast.error(err instanceof Error ? err.message : "Image upload failed.");
     } finally {
       URL.revokeObjectURL(localPreview);
       setUploading(false);
@@ -190,7 +189,6 @@ export default function ProfilePage() {
 
     setSaving(true);
     setError("");
-    setSuccess("");
 
     try {
       const auth = await authClient.token();
@@ -229,9 +227,9 @@ export default function ProfilePage() {
       };
 
       setProfile(updatedProfile);
-      setSuccess(result.message || "Profile updated successfully.");
+      toast.success(result.message || "Profile updated successfully.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      toast.error(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setSaving(false);
     }
@@ -294,13 +292,6 @@ export default function ProfilePage() {
         <div className="mb-4 flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
           <AlertCircle size={17} className="shrink-0" />
           {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-emerald-600 dark:text-emerald-400">
-          <CheckCircle2 size={17} className="shrink-0" />
-          {success}
         </div>
       )}
 

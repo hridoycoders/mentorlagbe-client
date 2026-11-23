@@ -23,6 +23,7 @@ import {
 
 import { apiRequest } from "@/lib/api";
 import { authClient, useSession } from "@/lib/auth-client";
+import { toast } from "sonner";
 import type { Tuition } from "@/types/tuition";
 
 interface TuitionDetails extends Tuition {
@@ -263,13 +264,15 @@ export default function TuitionDetailsPage() {
         setStudentPhone("");
         setPreferredSchedule("");
         setStudentNote("");
+
+        toast.success("Application submitted successfully.");
       } else {
         throw new Error(response.message || "Application submission failed.");
       }
     } catch (requestError) {
       console.error("Application Submission Error:", requestError);
 
-      setApplicationError(
+      toast.error(
         requestError instanceof Error
           ? requestError.message
           : "Something went wrong. Please try again.",
@@ -503,33 +506,10 @@ export default function TuitionDetailsPage() {
                   </p>
                 </div>
 
-                {applicationSuccess ? (
-                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-center">
-                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
-                      <Check size={28} />
-                    </div>
-
-                    <h3 className="mt-4 text-lg font-bold">
-                      Application Submitted!
-                    </h3>
-
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      Your application has been sent successfully. The tutor can
-                      now review your application.
-                    </p>
-
-                    <Link
-                      href="/dashboard"
-                      className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:opacity-90"
-                    >
-                      Go to Dashboard
-                    </Link>
-                  </div>
-                ) : (
-                  <form
-                    onSubmit={handleApplicationSubmit}
-                    className="space-y-5"
-                  >
+                <form
+                  onSubmit={handleApplicationSubmit}
+                  className="space-y-5"
+                >
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         <label className="mb-2 block text-sm font-semibold">
@@ -683,13 +663,22 @@ export default function TuitionDetailsPage() {
 
                     <button
                       type="submit"
-                      disabled={submitting || !applicationMessage.trim()}
+                      disabled={
+                        submitting ||
+                        applicationSuccess ||
+                        !applicationMessage.trim()
+                      }
                       className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-52"
                     >
                       {submitting ? (
                         <>
                           <LoaderCircle size={18} className="animate-spin" />
                           Submitting Application...
+                        </>
+                      ) : applicationSuccess ? (
+                        <>
+                          <Check size={17} />
+                          Application Submitted
                         </>
                       ) : (
                         <>
@@ -704,7 +693,6 @@ export default function TuitionDetailsPage() {
                       student account.
                     </p>
                   </form>
-                )}
               </section>
             )}
           </div>

@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSession } from "@/lib/auth-client";
+import { apiRequest } from "@/lib/api";
+import { authClient, useSession } from "@/lib/auth-client";
 import { useCheckout } from "@/lib/use-checkout";
 import {
+  AlertCircle,
   ArrowRight,
   BookOpen,
   CheckCircle2,
@@ -14,6 +17,38 @@ import {
   PlusCircle,
   Users,
 } from "lucide-react";
+
+interface TutorStats {
+  plan: string;
+  totalTuitions: number;
+  activeTuitions: number;
+  approvedTuitions: number;
+  pendingTuitions: number;
+  rejectedTuitions: number;
+  totalApplicants: number;
+  pendingApplications: number;
+  acceptedApplications: number;
+  rejectedApplications: number;
+}
+
+interface TutorStatsResponse {
+  success: boolean;
+  message: string;
+  data: TutorStats;
+}
+
+const EMPTY_STATS: TutorStats = {
+  plan: "free",
+  totalTuitions: 0,
+  activeTuitions: 0,
+  approvedTuitions: 0,
+  pendingTuitions: 0,
+  rejectedTuitions: 0,
+  totalApplicants: 0,
+  pendingApplications: 0,
+  acceptedApplications: 0,
+  rejectedApplications: 0,
+};
 
 const quickActions = [
   {
@@ -49,6 +84,10 @@ export default function TutorDashboardPage() {
   const { data: session } = useSession();
   const { startCheckout, isProcessing } = useCheckout();
 
+  const [stats, setStats] = useState<TutorStats>(EMPTY_STATS);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [statsError, setStatsError] = useState("");
+
   const user = session?.user as
     | {
         name?: string;
@@ -57,8 +96,73 @@ export default function TutorDashboardPage() {
     | undefined;
 
   const tutorName = user?.name?.trim().split(" ")[0] || "Tutor";
-  const plan = user?.plan?.toLowerCase() || "free";
+  const plan = (user?.plan || stats.plan || "free").toLowerCase();
   const isPro = plan === "pro";
+
+  useEffect(() => {
+    let active = true;
+
+    const loadStats = async () => {
+      try {
+        setStatsError("");
+
+        const { data: tokenData, error: tokenError } = await authClient.token();
+
+        if (tokenError || !tokenData?.token) {
+          throw new Error(
+            "Your login session could not be verified. Please sign in again.",
+          );
+        }
+
+        const response = await apiRequest<TutorStatsResponse>(
+          "/api/dashboard/stats/tutor",
+          {
+            headers: {
+              Authorization: `Bearer ${tokenData.token}`,
+            },
+          },
+        );
+
+        if (!response.success || !response.data) {
+          throw new Error(
+            response.message || "Could not load dashboard statistics.",
+          );
+        }
+
+        if (active) {
+          setStats({
+            plan: response.data.plan || "free",
+            totalTuitions: response.data.totalTuitions ?? 0,
+            activeTuitions: response.data.activeTuitions ?? 0,
+            approvedTuitions: response.data.approvedTuitions ?? 0,
+            pendingTuitions: response.data.pendingTuitions ?? 0,
+            rejectedTuitions: response.data.rejectedTuitions ?? 0,
+            totalApplicants: response.data.totalApplicants ?? 0,
+            pendingApplications: response.data.pendingApplications ?? 0,
+            acceptedApplications: response.data.acceptedApplications ?? 0,
+            rejectedApplications: response.data.rejectedApplications ?? 0,
+          });
+        }
+      } catch (err) {
+        if (active) {
+          setStats(EMPTY_STATS);
+          setStatsError(
+            err instanceof Error
+              ? err.message
+              : "Could not load dashboard statistics.",
+          );
+        }
+      } finally {
+        if (active) setLoadingStats(false);
+      }
+    };
+
+    void loadStats();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -110,6 +214,90 @@ export default function TutorDashboardPage() {
                 {isPro ? "Unlimited tuition posts" : "Up to 2 tuition posts"}
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Dashboard Statistics */}
+      <section aria-label="Tutor overview metrics">
+        {statsError && !loadingStats && (
+          <div
+            role="alert"
+            className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-700 dark:text-amber-300"
+          >
+            <AlertCircle size={16} className="mt-0.5 shrink-0" />
+            <span>{statsError}</span>
+          </div>
+        )}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">
+                Total Tuitions Posted
+              </p>
+              <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <BookOpen size={18} />
+              </div>
+            </div>
+            <p className="mt-3 text-2xl font-bold text-foreground">
+              {loadingStats ? "..." : stats.totalTuitions}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              All tuition posts you have created
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">
+                Active / Approved Tuitions
+              </p>
+              <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
+                <CheckCircle2 size={18} />
+              </div>
+            </div>
+            <p className="mt-3 text-2xl font-bold text-foreground">
+              {loadingStats ? "..." : stats.activeTuitions}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {loadingStats ? " " : `${stats.approvedTuitions} approved`}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">
+                Total Applicants Received
+              </p>
+              <div className="flex size-9 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600">
+                <Users size={18} />
+              </div>
+            </div>
+            <p className="mt-3 text-2xl font-bold text-foreground">
+              {loadingStats ? "..." : stats.totalApplicants}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {loadingStats
+                ? " "
+                : `${stats.pendingApplications} pending applications`}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">
+                Current Plan
+              </p>
+              <div className="flex size-9 items-center justify-center rounded-lg bg-brand-amber/15 text-brand-amber">
+                <Crown size={18} />
+              </div>
+            </div>
+            <p className="mt-3 text-2xl font-bold capitalize text-foreground">
+              {loadingStats ? "..." : isPro ? "Pro" : "Free"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {isPro ? "Unlimited tuition posts" : "Up to 2 tuition posts"}
+            </p>
           </div>
         </div>
       </section>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -16,7 +16,11 @@ import {
 } from "lucide-react";
 
 import { apiRequest } from "@/lib/api";
-import type { Tuition, TuitionApiResponse } from "@/types/tuition";
+import type {
+  Tuition,
+  TuitionApiResponse,
+  TuitionPagination,
+} from "@/types/tuition";
 
 function formatFee(tuition: Tuition) {
   const { min, max } = tuition.monthlyFee;
@@ -83,9 +87,14 @@ function TuitionSkeleton() {
   );
 }
 
+const PAGE_SIZE = 12;
+
 export default function TuitionsPage() {
   const [tuitions, setTuitions] = useState<Tuition[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [pagination, setPagination] = useState<TuitionPagination | null>(null);
+
+  const [page, setPage] = useState(1);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -114,8 +123,35 @@ export default function TuitionsPage() {
     readInitialSubject();
   }, []);
 
+  const prevFiltersRef = useRef({
+    submittedSearch,
+    selectedSubject,
+    selectedClass,
+    selectedMode,
+  });
+
   // Fetch filtered tuition data from the backend
   useEffect(() => {
+    const prev = prevFiltersRef.current;
+    const filtersChanged =
+      prev.submittedSearch !== submittedSearch ||
+      prev.selectedSubject !== selectedSubject ||
+      prev.selectedClass !== selectedClass ||
+      prev.selectedMode !== selectedMode;
+
+    prevFiltersRef.current = {
+      submittedSearch,
+      selectedSubject,
+      selectedClass,
+      selectedMode,
+    };
+
+    // Reset to first page whenever filters change (avoids fetching an empty page).
+    if (filtersChanged && page !== 1) {
+      setPage(1);
+      return;
+    }
+
     let active = true;
 
     async function loadTuitions() {
@@ -145,17 +181,19 @@ export default function TuitionsPage() {
           params.set("mode", selectedMode);
         }
 
+        params.set("page", String(page));
+        params.set("limit", String(PAGE_SIZE));
+
         const queryString = params.toString();
 
-        const endpoint = queryString
-          ? `/api/tuitions/search?${queryString}`
-          : "/api/tuitions/search";
+        const endpoint = `/api/tuitions/search?${queryString}`;
 
         const response = await apiRequest<TuitionApiResponse>(endpoint);
 
         if (active) {
           setTuitions(response.data || []);
           setTotalCount(response.total || 0);
+          setPagination(response.pagination || null);
         }
       } catch (requestError) {
         console.error("Tuition Search Error:", requestError);
@@ -164,6 +202,7 @@ export default function TuitionsPage() {
           setError("Unable to load tuition opportunities. Please try again.");
           setTuitions([]);
           setTotalCount(0);
+          setPagination(null);
         }
       } finally {
         if (active) {
@@ -182,6 +221,7 @@ export default function TuitionsPage() {
     selectedSubject,
     selectedClass,
     selectedMode,
+    page,
     retryCount,
   ]);
 
@@ -519,6 +559,48 @@ export default function TuitionsPage() {
                 </div>
               </article>
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && !error && pagination && pagination.totalPages > 1 && (
+          <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Page{" "}
+              <span className="font-semibold text-foreground">
+                {pagination.page}
+              </span>{" "}
+              of{" "}
+              <span className="font-semibold text-foreground">
+                {pagination.totalPages}
+              </span>{" "}
+              · {pagination.total}{" "}
+              {pagination.total === 1 ? "tuition" : "tuitions"}
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={!pagination.hasPrevPage || loading}
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Previous
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPage((p) =>
+                    Math.min(pagination.totalPages, p + 1),
+                  )
+                }
+                disabled={!pagination.hasNextPage || loading}
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </section>

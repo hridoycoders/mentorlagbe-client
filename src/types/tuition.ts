@@ -19,9 +19,19 @@ export interface Tuition {
   isActive: boolean;
 }
 
+export interface TuitionPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
 export interface TuitionApiResponse {
   success: boolean;
   message: string;
   total: number;
   data: Tuition[];
+  pagination?: TuitionPagination;
 }

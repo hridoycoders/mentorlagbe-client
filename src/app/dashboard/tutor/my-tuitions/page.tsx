@@ -22,6 +22,7 @@ import {
 import Link from "next/link";
 
 import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 interface Tuition {
   _id: string;
@@ -317,8 +318,10 @@ export default function MyTuitionsPage() {
 
       setEditingTuition(null);
       setFormData(initialFormData);
+
+      toast.success("Tuition updated successfully.");
     } catch (err) {
-      setError(
+      toast.error(
         err instanceof Error ? err.message : "Failed to update tuition.",
       );
     } finally {
@@ -345,8 +348,14 @@ export default function MyTuitionsPage() {
       setTuitions((previous) =>
         previous.map((item) => (item._id === tuition._id ? result.data : item)),
       );
+
+      toast.success(
+        tuition.isActive
+          ? "Tuition closed successfully."
+          : "Tuition activated successfully.",
+      );
     } catch (err) {
-      setError(
+      toast.error(
         err instanceof Error ? err.message : "Failed to update tuition status.",
       );
     } finally {
@@ -373,8 +382,10 @@ export default function MyTuitionsPage() {
       setTuitions((previous) =>
         previous.filter((item) => item._id !== tuition._id),
       );
+
+      toast.success("Tuition deleted successfully.");
     } catch (err) {
-      setError(
+      toast.error(
         err instanceof Error ? err.message : "Failed to delete tuition.",
       );
     } finally {

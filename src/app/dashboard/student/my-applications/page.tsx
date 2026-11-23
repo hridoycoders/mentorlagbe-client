@@ -67,6 +67,7 @@ export default function MyApplicationsPage() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<StatusFilter>("all");
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
 
 
@@ -225,6 +226,54 @@ useEffect(() => {
     { label: "Accepted", value: "accepted" },
     { label: "Rejected", value: "rejected" },
   ];
+
+  const handleCancelApplication = async (applicationId: string) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel this pending application?",
+    );
+
+    if (!confirmed) return;
+
+    if (cancellingId) return;
+
+    setCancellingId(applicationId);
+
+    try {
+      const { data: tokenData, error: tokenError } = await authClient.token();
+
+      if (tokenError || !tokenData?.token) {
+        throw new Error(
+          "Your login session could not be verified. Please sign in again.",
+        );
+      }
+
+      const response = await apiRequest<{ success: boolean; message: string }>(
+        `/api/applications/${applicationId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${tokenData.token}`,
+          },
+        },
+      );
+
+      if (!response.success) {
+        throw new Error(response.message || "Failed to cancel application.");
+      }
+
+      await loadApplications(false);
+    } catch (requestError) {
+      console.error("Cancel Application Error:", requestError);
+
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Something went wrong while cancelling the application.",
+      );
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -519,13 +568,38 @@ useEffect(() => {
                       )}
                     </div>
 
-                    <Link
-                      href={`/tuitions/${application.tuitionId}`}
-                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-border px-3.5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary"
-                    >
-                      View Tuition
-                      <ArrowRight size={15} />
-                    </Link>
+                    <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+                      {application.status === "pending" && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handleCancelApplication(application._id)
+                          }
+                          disabled={cancellingId === application._id}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-destructive/30 px-3.5 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {cancellingId === application._id ? (
+                            <>
+                              <Loader2 size={15} className="animate-spin" />
+                              Cancelling...
+                            </>
+                          ) : (
+                            <>
+                              <XCircle size={15} />
+                              Cancel
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      <Link
+                        href={`/tuitions/${application.tuitionId}`}
+                        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-border px-3.5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary"
+                      >
+                        View Tuition
+                        <ArrowRight size={15} />
+                      </Link>
+                    </div>
                   </div>
                 </article>
               );
